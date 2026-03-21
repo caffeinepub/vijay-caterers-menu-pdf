@@ -57,6 +57,14 @@ function toDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
+// Course image map — keys match course names in menuData
+const COURSE_IMAGE_PATHS: Record<string, string> = {
+  Snacks: "/assets/generated/category-snacks.dim_120x80.jpg",
+  "Main Veg Course": "/assets/generated/category-veg.dim_120x80.jpg",
+  "Main Non-Veg Course": "/assets/generated/category-nonveg.dim_120x80.jpg",
+  "Counter 1": "/assets/generated/category-counter.dim_120x80.jpg",
+};
+
 function buildPrintHtml(
   selectedItems: MenuItem[],
   eventName: string,
@@ -78,10 +86,24 @@ function buildPrintHtml(
       })
     : "";
 
+  // Use absolute URLs so images load correctly in the popup window
+  const origin = window.location.origin;
+
   const coursesHtml = Object.entries(grouped)
-    .map(
-      ([course, subCats]) => `
+    .map(([course, subCats]) => {
+      const imgPath = COURSE_IMAGE_PATHS[course];
+      const imgHtml = imgPath
+        ? `<div class="course-img-wrap">
+            <img class="course-img" src="${origin}${imgPath}" alt="${course}" crossorigin="anonymous" />
+            <div class="course-img-overlay">
+              <span class="course-img-label">${course}</span>
+            </div>
+          </div>`
+        : "";
+
+      return `
     <div class="course-section">
+      ${imgHtml}
       <div class="course-title">${course}</div>
       ${Object.entries(subCats)
         .map(
@@ -96,8 +118,8 @@ function buildPrintHtml(
         )
         .join("")}
     </div>
-  `,
-    )
+  `;
+    })
     .join("");
 
   const eventInfoHtml =
@@ -237,8 +259,42 @@ function buildPrintHtml(
       letter-spacing: 0.5px;
     }
 
+    /* Course image banner */
+    .course-img-wrap {
+      position: relative;
+      width: 100%;
+      height: 52px;
+      overflow: hidden;
+      border-radius: 3px;
+      margin-bottom: 2mm;
+      border: 1px solid #C9A24A;
+    }
+    .course-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .course-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0.05) 100%);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+    }
+    .course-img-label {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    }
+
     /* Menu content */
-    .course-section { margin-bottom: 4mm; }
+    .course-section { margin-bottom: 5mm; }
     .course-title {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 14px;
@@ -249,6 +305,7 @@ function buildPrintHtml(
       border-bottom: 1px solid #C9A24A;
       padding-bottom: 1mm;
       margin-bottom: 2.5mm;
+      display: none;
     }
     .subcategory-block { margin-bottom: 2.5mm; }
     .subcategory-title {
@@ -368,7 +425,7 @@ function buildPrintHtml(
   </div>
   <script>
     window.addEventListener('load', function() {
-      setTimeout(function() { window.print(); }, 300);
+      setTimeout(function() { window.print(); }, 600);
       window.onafterprint = function() { window.close(); };
     });
   <\/script>

@@ -29,8 +29,8 @@ export function MenuSidebar({
           Menu Categories
         </h3>
       </div>
-      <ScrollArea className="flex-1 overflow-auto">
-        <div className="p-2">
+      <ScrollArea className="flex-1">
+        <div className="p-2 pb-8">
           {menuData.map((course) => {
             const isOpen = selectedCourse === course.name;
             const courseSelectedCount = course.subCategories

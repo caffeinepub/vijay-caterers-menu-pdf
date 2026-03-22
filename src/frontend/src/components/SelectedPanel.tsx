@@ -91,7 +91,7 @@ export function SelectedPanel({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 overflow-auto">
+      <ScrollArea className="flex-1">
         {selectedItems.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center h-32 text-muted-foreground text-xs text-center px-4"
@@ -102,7 +102,7 @@ export function SelectedPanel({
             <p>Click items from the menu to add them.</p>
           </div>
         ) : (
-          <div className="p-3 space-y-3">
+          <div className="p-3 pb-8 space-y-3">
             {Object.entries(groups).map(([subCat, items]) => (
               <div key={subCat}>
                 <p className="text-xs font-bold text-gold uppercase tracking-wider mb-1.5">

@@ -8,11 +8,13 @@ export interface MenuItem {
 export interface SubCategory {
   name: string;
   items: MenuItem[];
+  image?: string;
 }
 
 export interface Course {
   name: string;
   subCategories: SubCategory[];
+  image?: string;
 }
 
 function makeItems(course: string, sub: string, names: string[]): MenuItem[] {
@@ -27,6 +29,8 @@ function makeItems(course: string, sub: string, names: string[]): MenuItem[] {
 export const menuData: Course[] = [
   {
     name: "Welcome Drinks",
+    image:
+      "https://bhandaryskitchen.com/wp-content/uploads/2025/04/Indian-Welcome-Drinks-Ideas.jpg",
     subCategories: [
       {
         name: "Juices & Milkshakes",
@@ -93,6 +97,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Veg Snacks",
+    image: "https://i.postimg.cc/6684TLfV/Veg-Snacks.jpg",
     subCategories: [
       {
         name: "Veg Snacks",
@@ -146,6 +151,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Non Veg Snacks",
+    image: "https://i.postimg.cc/s1y3crQ4/Non-Veg-Snacks.webp",
     subCategories: [
       {
         name: "Chicken",
@@ -227,6 +233,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Soups",
+    image: "https://i.postimg.cc/Yjkt3HGN/Soups.jpg",
     subCategories: [
       {
         name: "Veg Soups",
@@ -251,9 +258,11 @@ export const menuData: Course[] = [
   },
   {
     name: "Live Counters",
+    image: "https://i.postimg.cc/fJtqS3zY/Chat.jpg",
     subCategories: [
       {
         name: "Chat Items",
+        image: "https://i.postimg.cc/fJtqS3zY/Chat.jpg",
         items: makeItems("Live Counters", "Chat Items", [
           "Aloo Ragada – ఆలూ రగడ",
           "Aloo Tikka – ఆలూ టిక్కా",
@@ -269,6 +278,7 @@ export const menuData: Course[] = [
       },
       {
         name: "Chinese Counter",
+        image: "https://i.postimg.cc/mhRTwszN/chineese.jpg",
         items: makeItems("Live Counters", "Chinese Counter", [
           "Baby Corn Manchuria – బేబీ కార్న్ మంచూరియా",
           "Paneer Manchuria – పనీర్ మంచూరియా",
@@ -281,6 +291,7 @@ export const menuData: Course[] = [
       },
       {
         name: "Italian Snacks",
+        image: "https://i.postimg.cc/14PyHQnq/Italian.jpg",
         items: makeItems("Live Counters", "Italian Snacks", [
           "Garlic Bread – గార్లిక్ బ్రెడ్",
           "Grilled Pizza – గ్రిల్డ్ పిజ్జా",
@@ -295,6 +306,7 @@ export const menuData: Course[] = [
       },
       {
         name: "South Indian Tiffins",
+        image: "https://i.postimg.cc/HVcv8JYM/South-Indian.webp",
         items: makeItems("Live Counters", "South Indian Tiffins", [
           "Dosa (All Varieties) – దోస (అన్ని రకాల)",
           "Idly – ఈడ్లీ",
@@ -316,6 +328,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Salads",
+    image: "https://i.postimg.cc/XrK89dTL/Salads.jpg",
     subCategories: [
       {
         name: "Salads Counter",
@@ -335,6 +348,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Sweets",
+    image: "https://i.postimg.cc/tsd5FWLN/Sweets.jpg",
     subCategories: [
       {
         name: "Sweets",
@@ -384,6 +398,7 @@ export const menuData: Course[] = [
   },
   {
     name: "Assorted Desserts",
+    image: "https://i.postimg.cc/dhRBGrz9/Assorted-Desserts.webp",
     subCategories: [
       {
         name: "Desserts",

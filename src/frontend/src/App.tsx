@@ -1,4 +1,11 @@
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
+import { BookOpen, ClipboardList, UtensilsCrossed } from "lucide-react";
 import { useState } from "react";
 import { MenuItemsList } from "./components/MenuItemsList";
 import { MenuSidebar } from "./components/MenuSidebar";
@@ -34,18 +41,6 @@ const cornerSvgBR = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="
   <text x="59" y="72" font-size="9" fill="#C9A24A" font-family="serif">✦</text>
 </svg>`;
 
-const _centerTopOrnament = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-  <line x1="20" y1="2" x2="20" y2="38" stroke="#C9A24A" stroke-width="1"/>
-  <line x1="2" y1="20" x2="38" y2="20" stroke="#C9A24A" stroke-width="1"/>
-  <line x1="7" y1="7" x2="33" y2="33" stroke="#C9A24A" stroke-width="0.8"/>
-  <line x1="33" y1="7" x2="7" y2="33" stroke="#C9A24A" stroke-width="0.8"/>
-  <circle cx="20" cy="20" r="3" fill="#C9A24A"/>
-  <circle cx="20" cy="4" r="1.5" fill="#C9A24A"/>
-  <circle cx="20" cy="36" r="1.5" fill="#C9A24A"/>
-  <circle cx="4" cy="20" r="1.5" fill="#C9A24A"/>
-  <circle cx="36" cy="20" r="1.5" fill="#C9A24A"/>
-</svg>`;
-
 const footerOrnament = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="16" viewBox="0 0 120 16">
   <line x1="0" y1="8" x2="45" y2="8" stroke="#C9A24A" stroke-width="0.8"/>
   <polygon points="55,8 58,4 61,8 58,12" fill="#C9A24A"/>
@@ -53,14 +48,69 @@ const footerOrnament = `<svg xmlns="http://www.w3.org/2000/svg" width="120" heig
   <line x1="75" y1="8" x2="120" y2="8" stroke="#C9A24A" stroke-width="0.8"/>
 </svg>`;
 
+// Category image URLs — only shown in PDF if items from that category are selected
+// Keys must exactly match item.course values from menuData
+const CATEGORY_IMAGES: Record<string, string> = {
+  "Welcome Drinks":
+    "https://bhandaryskitchen.com/wp-content/uploads/2025/04/Indian-Welcome-Drinks-Ideas.jpg",
+  "Veg Snacks": "https://i.postimg.cc/6684TLfV/Veg-Snacks.jpg",
+  "Non Veg Snacks": "https://i.postimg.cc/s1y3crQ4/Non-Veg-Snacks.webp",
+  Soups: "https://i.postimg.cc/Yjkt3HGN/Soups.jpg",
+  "Live Counters": "https://i.postimg.cc/fJtqS3zY/Chat.jpg",
+  Salads: "https://i.postimg.cc/XrK89dTL/Salads.jpg",
+  Sweets: "https://i.postimg.cc/tsd5FWLN/Sweets.jpg",
+  "Assorted Desserts": "https://i.postimg.cc/dhRBGrz9/Assorted-Desserts.webp",
+  "Indian Breads": "https://i.postimg.cc/k2NcWKkN/Indian-Breads.jpg",
+  "Kurma Curries": "https://i.postimg.cc/G4bYwN54/Kurma-Curries.webp",
+  "Veg Main Course": "https://i.postimg.cc/bZqbcMBs/Veg-main-course.jpg",
+  Additionals: "https://i.postimg.cc/K1mLSVH4/Additionals.jpg",
+  "Live Counters 2": "https://i.postimg.cc/ppCr8dsW/Fruits.jpg",
+  "Non-Veg Main Course": "https://i.postimg.cc/dLwDLCjJ/Non-Veg.jpg",
+};
+
 function toDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+}
+
+/**
+ * Fetches an external image and converts it to a base64 data URI via canvas.
+ * Falls back to the original URL if anything fails (e.g. CORS, network error).
+ */
+async function fetchImageAsDataUri(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(url);
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        } catch {
+          resolve(url);
+        }
+      };
+      img.onerror = () => resolve(url);
+      // Cache-bust to encourage CORS headers
+      img.src = url.includes("?") ? url : `${url}?_cb=${Date.now()}`;
+    } catch {
+      resolve(url);
+    }
+  });
 }
 
 function buildPrintHtml(
   selectedItems: MenuItem[],
   eventName: string,
   eventDate: string,
+  resolvedImages: Record<string, string>,
 ): string {
   const grouped: Record<string, Record<string, string[]>> = {};
   for (const item of selectedItems) {
@@ -79,11 +129,9 @@ function buildPrintHtml(
     : "";
 
   const coursesHtml = Object.entries(grouped)
-    .map(
-      ([course, subCats]) => `
-    <div class="course-section">
-      <div class="course-title">${course}</div>
-      ${Object.entries(subCats)
+    .map(([course, subCats]) => {
+      const categoryImage = resolvedImages[course] ?? CATEGORY_IMAGES[course];
+      const itemsHtml = Object.entries(subCats)
         .map(
           ([subCat, items]) => `
           <div class="subcategory-block">
@@ -94,10 +142,24 @@ function buildPrintHtml(
           </div>
         `,
         )
-        .join("")}
+        .join("");
+
+      const imageHtml = categoryImage
+        ? `<div class="course-image-wrap">
+            <img src="${categoryImage}" alt="${course}" class="course-image" />
+           </div>`
+        : "";
+
+      return `
+    <div class="course-section">
+      <div class="course-title">${course}</div>
+      <div class="course-content">
+        <div class="course-items">${itemsHtml}</div>
+        ${imageHtml}
+      </div>
     </div>
-  `,
-    )
+  `;
+    })
     .join("");
 
   const eventInfoHtml =
@@ -128,7 +190,6 @@ function buildPrintHtml(
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    /* Fixed triple border frames — repeat on every printed page */
     .border-outer {
       position: fixed; top: 5mm; left: 5mm; right: 5mm; bottom: 5mm;
       border: 3px solid #C6A24A; pointer-events: none; z-index: 999;
@@ -141,23 +202,22 @@ function buildPrintHtml(
       position: fixed; top: 10mm; left: 10mm; right: 10mm; bottom: 10mm;
       border: 0.5px solid #C6A24A; pointer-events: none; z-index: 999;
     }
-    /* Fixed corners — repeat on every page */
     .corner-img { position: fixed; width: 72px; height: 72px; z-index: 1000; }
     .corner-tl { top: 3mm; left: 3mm; }
     .corner-tr { top: 3mm; right: 3mm; }
     .corner-bl { bottom: 3mm; left: 3mm; }
     .corner-br { bottom: 3mm; right: 3mm; }
-
-    /* --- TABLE-BASED REPEATING HEADER/FOOTER --- */
-    table.page-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
+    .fixed-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #F6F0E6;
+      z-index: 100;
     }
-    /* thead repeats on every page natively in all browsers */
-    table.page-table thead tr td,
-    table.page-table tfoot tr td {
-      padding: 0;
+    .fixed-footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #F6F0E6;
+      z-index: 100;
     }
     .header-block {
       background: #F6F0E6;
@@ -197,9 +257,8 @@ function buildPrintHtml(
       text-align: center; margin-top: 3mm;
       font-size: 12px; color: #6B4F1A; font-style: italic; letter-spacing: 0.5px;
     }
-    /* Content area */
     .content-block {
-      padding: 6mm 16mm 0mm 16mm;
+      padding: 52mm 16mm 32mm 16mm;
       background: #F6F0E6;
     }
     .footer-block {
@@ -215,17 +274,36 @@ function buildPrintHtml(
       font-size: 10px; color: #7A5A1F; letter-spacing: 0.5px; margin-bottom: 2px;
     }
     .footer-orn { display: block; margin: 3px auto 0; width: 120px; height: 16px; }
-    /* Watermark */
     .watermark {
       position: fixed; bottom: 30mm; right: 14mm;
       width: 100px; height: 100px; opacity: 0.06; pointer-events: none;
     }
-    /* Menu content */
     .course-section { margin-bottom: 5mm; border-bottom: 1px solid #e8d9b0; padding-bottom: 4mm; }
     .course-title {
       font-size: 14px; font-weight: 700; color: #8B5E14;
       text-transform: uppercase; letter-spacing: 3px;
       border-bottom: 1px solid #C9A24A; padding-bottom: 1mm; margin-bottom: 2.5mm;
+    }
+    .course-content {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .course-items {
+      flex: 1;
+      min-width: 0;
+    }
+    .course-image-wrap {
+      flex-shrink: 0;
+      width: 130px;
+    }
+    .course-image {
+      width: 130px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #C9A24A;
+      display: block;
     }
     .subcategory-block { margin-bottom: 3mm; }
     .subcategory-title {
@@ -245,16 +323,13 @@ function buildPrintHtml(
   </style>
 </head>
 <body>
-  <!-- Triple borders: repeat on every page via position:fixed -->
   <div class="border-outer"></div>
   <div class="border-middle"></div>
   <div class="border-inner"></div>
-  <!-- Corner ornaments: repeat on every page -->
   <img class="corner-img corner-tl" src="${cornerTLUri}" alt="" />
   <img class="corner-img corner-tr" src="${cornerTRUri}" alt="" />
   <img class="corner-img corner-bl" src="${cornerBLUri}" alt="" />
   <img class="corner-img corner-br" src="${cornerBRUri}" alt="" />
-  <!-- Mandala watermark -->
   <svg class="watermark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="#8B6914">
     <circle cx="50" cy="50" r="45" fill="none" stroke="#8B6914" stroke-width="1"/>
     <circle cx="50" cy="50" r="35" fill="none" stroke="#8B6914" stroke-width="0.8"/>
@@ -264,53 +339,34 @@ function buildPrintHtml(
     <line x1="18" y1="18" x2="82" y2="82" stroke="#8B6914" stroke-width="0.5"/>
     <line x1="82" y1="18" x2="18" y2="82" stroke="#8B6914" stroke-width="0.5"/>
   </svg>
-
-  <!-- TABLE: thead repeats header, tfoot repeats footer, on every printed page -->
-  <table class="page-table">
-    <thead>
-      <tr>
-        <td>
-          <div class="header-block">
-            <div class="print-header">
-              <div class="print-logo-wrap">
-                <img
-                  src="https://res.cloudinary.com/dnllne8qr/image/upload/v1753611051/WhatsApp_Image_2025-07-26_at_5.02.48_PM_zil48t.png"
-                  alt="VC" class="print-logo" crossorigin="anonymous"
-                />
-                <div class="print-logo-name">VIJAY<br/>CATERERS</div>
-              </div>
-              <div class="print-title">
-                <h1>VIJAY CATERERS</h1>
-                <div class="subtitle">Premium Catering Services</div>
-              </div>
-            </div>
-            ${eventInfoHtml}
-          </div>
-        </td>
-      </tr>
-    </thead>
-    <tfoot>
-      <tr>
-        <td>
-          <div class="footer-block">
-            <div class="footer-contact">Contact No: 9866937747, 9959500833</div>
-            <div class="footer-instagram">Instagram: vijaycaterers_</div>
-            <img class="footer-orn" src="${footOrnUri}" alt="" />
-          </div>
-        </td>
-      </tr>
-    </tfoot>
-    <tbody>
-      <tr>
-        <td>
-          <div class="content-block">
-            ${coursesHtml}
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
+  <div class="fixed-header">
+    <div class="header-block">
+      <div class="print-header">
+        <div class="print-logo-wrap">
+          <img
+            src="https://res.cloudinary.com/dnllne8qr/image/upload/v1753611051/WhatsApp_Image_2025-07-26_at_5.02.48_PM_zil48t.png"
+            alt="VC" class="print-logo"
+          />
+          <div class="print-logo-name">VIJAY<br/>CATERERS</div>
+        </div>
+        <div class="print-title">
+          <h1>VIJAY CATERERS</h1>
+          <div class="subtitle">Premium Catering Services</div>
+        </div>
+      </div>
+      ${eventInfoHtml}
+    </div>
+  </div>
+  <div class="fixed-footer">
+    <div class="footer-block">
+      <div class="footer-contact">Contact No: 9866937747, 9959500833</div>
+      <div class="footer-instagram">Instagram: vijaycaterers_</div>
+      <img class="footer-orn" src="${footOrnUri}" alt="" />
+    </div>
+  </div>
+  <div class="content-block">
+    ${coursesHtml}
+  </div>
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() { window.print(); }, 600);
@@ -320,6 +376,8 @@ function buildPrintHtml(
 </body>
 </html>`;
 }
+
+type ActiveTab = "menu" | "items" | "selected";
 
 export default function App() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(
@@ -332,20 +390,23 @@ export default function App() {
   const [customItems, setCustomItems] = useState<MenuItem[]>([]);
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("menu");
+  const [tabletSheetOpen, setTabletSheetOpen] = useState(false);
 
   const allMenuItems: MenuItem[] = menuData.flatMap((c) =>
     c.subCategories.flatMap((s) => s.items),
   );
-
   const allItems = [...allMenuItems, ...customItems];
 
   function handleSelectCourse(courseName: string) {
     setSelectedCourse(courseName);
     setSelectedSubCategory(null);
+    setActiveTab("items");
   }
 
   function handleSelectSubCategory(subName: string) {
     setSelectedSubCategory((prev) => (prev === subName ? null : subName));
+    setActiveTab("items");
   }
 
   function toggleItem(id: string) {
@@ -388,8 +449,29 @@ export default function App() {
     selectedItems.has(item.id),
   );
 
-  function handlePrint() {
-    const html = buildPrintHtml(selectedItemObjects, eventName, eventDate);
+  async function handlePrint() {
+    // Determine unique courses that have selected items
+    const coursesWithItems = [
+      ...new Set(selectedItemObjects.map((item) => item.course)),
+    ];
+
+    // Pre-fetch all needed images in parallel as base64 data URIs
+    const resolvedImages: Record<string, string> = {};
+    await Promise.all(
+      coursesWithItems.map(async (course) => {
+        const url = CATEGORY_IMAGES[course];
+        if (url) {
+          resolvedImages[course] = await fetchImageAsDataUri(url);
+        }
+      }),
+    );
+
+    const html = buildPrintHtml(
+      selectedItemObjects,
+      eventName,
+      eventDate,
+      resolvedImages,
+    );
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(html);
@@ -397,22 +479,51 @@ export default function App() {
     }
   }
 
+  const tabs: {
+    id: ActiveTab;
+    label: string;
+    Icon: typeof BookOpen;
+    badge?: number;
+  }[] = [
+    { id: "menu", label: "Menu", Icon: BookOpen },
+    { id: "items", label: "Items", Icon: UtensilsCrossed },
+    {
+      id: "selected",
+      label: "Selected",
+      Icon: ClipboardList,
+      badge: selectedItemObjects.length,
+    },
+  ];
+
+  const sharedSelectedPanelProps = {
+    selectedItems: selectedItemObjects,
+    eventName,
+    eventDate,
+    onEventNameChange: setEventName,
+    onEventDateChange: setEventDate,
+    onClearAll: clearAll,
+    onRemoveItem: toggleItem,
+    onGeneratePdf: () => {
+      handlePrint();
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
+      {/* ── Header ── */}
       <header className="bg-navy text-white sticky top-0 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 md:px-4 py-2.5 md:py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
             <img
               src="https://res.cloudinary.com/dnllne8qr/image/upload/v1753611051/WhatsApp_Image_2025-07-26_at_5.02.48_PM_zil48t.png"
               alt="Vijay Caterers Logo"
-              className="h-11 w-11 rounded-full object-cover border-2 border-gold"
+              className="h-9 w-9 md:h-11 md:w-11 rounded-full object-cover border-2 border-gold"
             />
             <div>
-              <h1 className="font-serif text-xl font-bold text-gold leading-tight">
+              <h1 className="font-serif text-base md:text-xl font-bold text-gold leading-tight">
                 Vijay Caterers
               </h1>
-              <p className="text-xs text-gold-light opacity-80">
+              <p className="text-[10px] md:text-xs text-gold-light opacity-80">
                 Premium Catering Services
               </p>
             </div>
@@ -426,7 +537,7 @@ export default function App() {
             >
               Home
             </a>
-            <span className="text-gold font-semibold">Menu Generator</span>
+            <span className="text-gold font-semibold">Menu Designer</span>
             <a
               href="https://vijay-caterers.onrender.com"
               target="_blank"
@@ -436,13 +547,27 @@ export default function App() {
               Contact
             </a>
           </nav>
+          {/* Mobile selected badge in header */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("selected")}
+            className="md:hidden flex items-center gap-1.5 bg-gold/20 rounded-full px-3 py-1.5"
+            data-ocid="nav.selected.tab"
+          >
+            <ClipboardList className="h-4 w-4 text-gold" />
+            {selectedItemObjects.length > 0 && (
+              <span className="text-xs font-bold text-gold">
+                {selectedItemObjects.length}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
-      {/* Hero */}
-      <div className="bg-gradient-to-b from-[oklch(0.16_0.03_250)] to-[oklch(0.22_0.03_250)] py-10 text-center">
+      {/* ── Hero (hidden on mobile to save space) ── */}
+      <div className="hidden md:block bg-gradient-to-b from-[oklch(0.16_0.03_250)] to-[oklch(0.22_0.03_250)] py-8 text-center">
         <div className="text-gold text-3xl mb-2">✦</div>
-        <h2 className="font-serif text-3xl md:text-4xl font-bold text-gold mb-2">
+        <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gold mb-2">
           Design Your Custom Branded Menu PDF
         </h2>
         <p className="text-gold-light opacity-70 text-sm">
@@ -450,45 +575,121 @@ export default function App() {
         </p>
       </div>
 
-      {/* Main 3-column layout */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 grid grid-cols-1 md:grid-cols-[260px_1fr_300px] gap-4">
-        <MenuSidebar
-          menuData={menuData}
-          selectedCourse={selectedCourse}
-          selectedSubCategory={selectedSubCategory}
-          selectedItems={selectedItems}
-          onSelectCourse={handleSelectCourse}
-          onSelectSubCategory={handleSelectSubCategory}
-        />
+      {/* ── Main Content ── */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-6 pb-20 md:pb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4 lg:grid lg:grid-cols-[260px_1fr_300px]">
+          {/* ── Sidebar ── */}
+          <div
+            className={`flex flex-col ${activeTab === "menu" ? "flex" : "hidden"} md:flex md:w-[220px] md:flex-none lg:w-auto`}
+          >
+            <MenuSidebar
+              menuData={menuData}
+              selectedCourse={selectedCourse}
+              selectedSubCategory={selectedSubCategory}
+              selectedItems={selectedItems}
+              onSelectCourse={handleSelectCourse}
+              onSelectSubCategory={handleSelectSubCategory}
+            />
+          </div>
 
-        <MenuItemsList
-          allItems={allItems}
-          selectedItems={selectedItems}
-          onToggleItem={toggleItem}
-          onToggleAll={toggleAll}
-          onAddCustomItem={addCustomItem}
-          courseName={selectedCourse ?? ""}
-          subCategoryName={selectedSubCategory}
-        />
+          {/* ── Items List ── */}
+          <div
+            className={`flex flex-col min-w-0 flex-1 ${activeTab === "items" ? "flex" : "hidden"} md:flex`}
+          >
+            <MenuItemsList
+              allItems={allItems}
+              selectedItems={selectedItems}
+              onToggleItem={toggleItem}
+              onToggleAll={toggleAll}
+              onAddCustomItem={addCustomItem}
+              courseName={selectedCourse ?? ""}
+              subCategoryName={selectedSubCategory}
+            />
+          </div>
 
-        <SelectedPanel
-          selectedItems={selectedItemObjects}
-          eventName={eventName}
-          eventDate={eventDate}
-          onEventNameChange={setEventName}
-          onEventDateChange={setEventDate}
-          onClearAll={clearAll}
-          onRemoveItem={(id) => toggleItem(id)}
-          onGeneratePdf={handlePrint}
-        />
+          {/* ── Selected Panel — visible on mobile (when tab=selected) and desktop ── */}
+          <div
+            className={`flex flex-col ${activeTab === "selected" ? "flex" : "hidden"} md:hidden lg:flex`}
+          >
+            <SelectedPanel {...sharedSelectedPanelProps} />
+          </div>
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-navy text-center py-6 mt-8">
-        <p className="text-gold text-sm font-serif">
-          Contact: 9866937747, 9959500833 &nbsp;|&nbsp; Instagram:
-          @vijaycaterers_
-        </p>
+      {/* ── Tablet: floating "View Selected" button + Sheet ── */}
+      <div className="hidden md:flex lg:hidden fixed bottom-6 right-5 z-40">
+        <button
+          type="button"
+          onClick={() => setTabletSheetOpen(true)}
+          className="flex items-center gap-2 bg-gold hover:bg-gold/90 text-white font-semibold text-sm px-4 py-2.5 rounded-full shadow-xl transition-all"
+          data-ocid="selected.open_modal_button"
+        >
+          <ClipboardList className="h-4 w-4" />
+          View Selected
+          {selectedItemObjects.length > 0 && (
+            <span className="bg-white text-gold rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">
+              {selectedItemObjects.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <Sheet open={tabletSheetOpen} onOpenChange={setTabletSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-[320px] sm:w-[360px] p-0 flex flex-col"
+          data-ocid="selected.sheet"
+        >
+          <SheetHeader className="bg-gold px-4 py-3 shrink-0">
+            <SheetTitle className="font-serif text-sm font-bold text-white tracking-wide uppercase text-left">
+              Selected Items
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <SelectedPanel {...sharedSelectedPanelProps} hideHeader />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Mobile Bottom Tab Bar ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-navy border-t border-gold/30 flex"
+        data-ocid="nav.tab_bar"
+      >
+        {tabs.map(({ id, label, Icon, badge }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
+              activeTab === id
+                ? "text-gold"
+                : "text-gold-light/40 hover:text-gold-light/70"
+            }`}
+            data-ocid={`nav.${id}.tab`}
+          >
+            <div className="relative">
+              <Icon className="h-5 w-5" />
+              {badge !== undefined && badge > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 bg-gold text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] font-semibold tracking-wide">
+              {label}
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Footer ── */}
+      <footer className="bg-navy text-center py-6 mt-4">
+        <div className="text-gold font-serif mb-1">
+          <p className="text-base font-bold">Vijay Caterers</p>
+          <p className="text-sm mt-1">Contact No: 9866937747, 9959500833</p>
+          <p className="text-sm">Instagram: @vijaycaterers_</p>
+        </div>
         <p className="text-gold-light opacity-50 text-xs mt-2">
           © {new Date().getFullYear()}. Built with ❤ using{" "}
           <a

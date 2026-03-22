@@ -21,7 +21,8 @@ export function MenuSidebar({
 }: Props) {
   return (
     <aside
-      className="bg-card rounded-lg border border-border shadow-xs flex flex-col sticky top-20 max-h-[calc(100vh-90px)] overflow-hidden"
+      className="bg-card rounded-lg border border-border shadow-xs flex flex-col overflow-hidden
+        h-[calc(100vh-180px)] md:h-[calc(100vh-160px)] lg:sticky lg:top-20 lg:h-[calc(100vh-90px)]"
       data-ocid="menu.sidebar.panel"
     >
       <div className="bg-gold px-4 py-3 shrink-0">
@@ -29,7 +30,7 @@ export function MenuSidebar({
           Menu Categories
         </h3>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-2 pb-8">
           {menuData.map((course) => {
             const isOpen = selectedCourse === course.name;
@@ -50,15 +51,17 @@ export function MenuSidebar({
                   data-ocid="menu.course.toggle"
                 >
                   <div className="flex items-center justify-between px-3 py-2">
-                    <span
-                      className={`font-serif text-sm font-semibold transition-colors ${
-                        isOpen
-                          ? "text-gold"
-                          : "text-foreground group-hover:text-gold"
-                      }`}
-                    >
-                      {course.name}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`font-serif text-sm font-semibold transition-colors truncate ${
+                          isOpen
+                            ? "text-gold"
+                            : "text-foreground group-hover:text-gold"
+                        }`}
+                      >
+                        {course.name}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       {courseSelectedCount > 0 && (
                         <span className="text-xs bg-gold text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">

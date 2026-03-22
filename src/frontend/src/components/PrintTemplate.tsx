@@ -6,6 +6,25 @@ interface Props {
   eventDate: string;
 }
 
+// Category image map — used only in PDF, not in dashboard
+const CATEGORY_IMAGES: Record<string, string> = {
+  "Welcome Drinks":
+    "https://bhandaryskitchen.com/wp-content/uploads/2025/04/Indian-Welcome-Drinks-Ideas.jpg",
+  "Veg Snacks": "https://i.postimg.cc/6684TLfV/Veg-Snacks.jpg",
+  "Non Veg Snacks": "https://i.postimg.cc/s1y3crQ4/Non-Veg-Snacks.webp",
+  Soups: "https://i.postimg.cc/Yjkt3HGN/Soups.jpg",
+  "Live Counters": "https://i.postimg.cc/fJtqS3zY/Chat.jpg",
+  Salads: "https://i.postimg.cc/XrK89dTL/Salads.jpg",
+  Sweets: "https://i.postimg.cc/tsd5FWLN/Sweets.jpg",
+  "Assorted Desserts": "https://i.postimg.cc/dhRBGrz9/Assorted-Desserts.webp",
+  "Indian Breads": "https://i.postimg.cc/k2NcWKkN/Indian-Breads.jpg",
+  "Kurma Curries": "https://i.postimg.cc/G4bYwN54/Kurma-Curries.webp",
+  "Veg Main Course": "https://i.postimg.cc/bZqbcMBs/Veg-main-course.jpg",
+  Additionals: "https://i.postimg.cc/K1mLSVH4/Additionals.jpg",
+  "Live Counters 2": "https://i.postimg.cc/ppCr8dsW/Fruits.jpg",
+  "Non-Veg Main Course": "https://i.postimg.cc/dLwDLCjJ/Non-Veg.jpg",
+};
+
 export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
   const grouped: Record<string, Record<string, string[]>> = {};
   for (const item of selectedItems) {
@@ -122,6 +141,29 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
           padding-bottom: 4mm;
           page-break-inside: avoid;
         }
+        .course-section-inner {
+          display: flex;
+          gap: 6mm;
+          align-items: flex-start;
+        }
+        .course-items-col {
+          flex: 1;
+          min-width: 0;
+        }
+        .course-image-col {
+          flex-shrink: 0;
+          width: 52mm;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+        }
+        .course-image-col img {
+          width: 52mm;
+          height: 48mm;
+          object-fit: cover;
+          border-radius: 3mm;
+          border: 1.5px solid #C6A24A;
+        }
         .course-title {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 20px; font-weight: 700; color: #8B6914;
@@ -134,9 +176,13 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
           font-size: 16px; font-weight: 700; color: #A07820;
           text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1.5mm;
         }
-        .items-grid { display: flex; flex-direction: column; gap: 4px; }
-        .menu-item { font-size: 20px; color: #2C1810; font-style: italic; }
-        .menu-item::before { content: '✦ '; color: #C6A24A; font-size: 12px; font-style: normal; }
+        .items-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2px 8px;
+        }
+        .menu-item { font-size: 14px; color: #2C1810; font-style: italic; }
+        .menu-item::before { content: '✦ '; color: #C6A24A; font-size: 10px; font-style: normal; }
         .print-footer {
           margin-top: 6mm; padding-top: 4mm;
           border-top: 1.5px solid #C6A24A; text-align: center;
@@ -178,23 +224,39 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
         )}
 
         <div style={{ marginTop: "2mm" }}>
-          {Object.entries(grouped).map(([course, subCats]) => (
-            <div className="course-section" key={course}>
-              <div className="course-title">{course}</div>
-              {Object.entries(subCats).map(([subCat, items]) => (
-                <div className="subcategory-block" key={subCat}>
-                  <div className="subcategory-title">{subCat}</div>
-                  <div className="items-grid">
-                    {items.map((name) => (
-                      <span className="menu-item" key={name}>
-                        {name}
-                      </span>
+          {Object.entries(grouped).map(([course, subCats]) => {
+            const categoryImage = CATEGORY_IMAGES[course];
+            return (
+              <div className="course-section" key={course}>
+                <div className="course-title">{course}</div>
+                <div className="course-section-inner">
+                  <div className="course-items-col">
+                    {Object.entries(subCats).map(([subCat, items]) => (
+                      <div className="subcategory-block" key={subCat}>
+                        <div className="subcategory-title">{subCat}</div>
+                        <div className="items-grid">
+                          {items.map((name) => (
+                            <span className="menu-item" key={name}>
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
+                  {categoryImage && (
+                    <div className="course-image-col">
+                      <img
+                        src={categoryImage}
+                        alt={course}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
         <div className="print-footer">

@@ -26,7 +26,6 @@ export function MenuItemsList({
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to top when category or subcategory changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: props are valid deps
   useEffect(() => {
     if (containerRef.current) {
@@ -42,10 +41,7 @@ export function MenuItemsList({
   const isSearching = query.trim().length > 0;
   const trimmed = query.trim();
 
-  // Items for the selected course
   const courseItems = allItems.filter((item) => item.course === courseName);
-
-  // If a subcategory is selected, filter to just that subcategory
   const baseItems = subCategoryName
     ? courseItems.filter((item) => item.subCategory === subCategoryName)
     : courseItems;
@@ -56,7 +52,6 @@ export function MenuItemsList({
       )
     : baseItems;
 
-  // Build grouped structure for non-search mode
   const grouped: Record<string, MenuItem[]> = {};
   if (!isSearching) {
     for (const item of filtered) {
@@ -144,7 +139,7 @@ export function MenuItemsList({
         )}
       </div>
 
-      <ScrollArea className="flex-1 h-[calc(100vh-320px)] min-h-[360px]">
+      <ScrollArea className="flex-1 h-[calc(100vh-280px)] md:h-[calc(100vh-340px)] lg:h-[calc(100vh-320px)] min-h-[300px]">
         {filtered.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm text-center px-6"

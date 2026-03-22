@@ -16,6 +16,8 @@ interface Props {
   onClearAll: () => void;
   onRemoveItem: (id: string) => void;
   onGeneratePdf: () => void;
+  /** When true, hides the header bar (used inside Sheet/drawer) */
+  hideHeader?: boolean;
 }
 
 export function SelectedPanel({
@@ -27,6 +29,7 @@ export function SelectedPanel({
   onClearAll,
   onRemoveItem,
   onGeneratePdf,
+  hideHeader = false,
 }: Props) {
   const groups: Record<string, MenuItem[]> = {};
   for (const item of selectedItems) {
@@ -44,17 +47,20 @@ export function SelectedPanel({
 
   return (
     <aside
-      className="bg-card rounded-lg border border-border shadow-xs flex flex-col sticky top-20 max-h-[calc(100vh-90px)] overflow-hidden"
+      className="bg-card rounded-lg border border-border shadow-xs flex flex-col overflow-hidden
+        h-[calc(100vh-180px)] md:h-auto lg:sticky lg:top-20 lg:h-[calc(100vh-90px)]"
       data-ocid="selected.panel"
     >
-      <div className="bg-gold px-4 py-3 flex items-center justify-between shrink-0">
-        <h3 className="font-serif text-sm font-bold text-white tracking-wide uppercase">
-          Selected Items
-        </h3>
-        <span className="text-xs bg-white/20 text-white rounded-full px-2 py-0.5 font-bold">
-          {selectedItems.length}
-        </span>
-      </div>
+      {!hideHeader && (
+        <div className="bg-gold px-4 py-3 flex items-center justify-between shrink-0">
+          <h3 className="font-serif text-sm font-bold text-white tracking-wide uppercase">
+            Selected Items
+          </h3>
+          <span className="text-xs bg-white/20 text-white rounded-full px-2 py-0.5 font-bold">
+            {selectedItems.length}
+          </span>
+        </div>
+      )}
 
       <div className="p-3 border-b border-border space-y-2 bg-secondary/30 shrink-0">
         <div>
@@ -91,7 +97,7 @@ export function SelectedPanel({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         {selectedItems.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center h-32 text-muted-foreground text-xs text-center px-4"

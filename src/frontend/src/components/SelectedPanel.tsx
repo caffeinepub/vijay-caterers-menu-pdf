@@ -44,10 +44,10 @@ export function SelectedPanel({
 
   return (
     <aside
-      className="bg-card rounded-lg border border-border shadow-xs flex flex-col overflow-hidden"
+      className="bg-card rounded-lg border border-border shadow-xs flex flex-col sticky top-20 max-h-[calc(100vh-90px)] overflow-hidden"
       data-ocid="selected.panel"
     >
-      <div className="bg-gold px-4 py-3 flex items-center justify-between">
+      <div className="bg-gold px-4 py-3 flex items-center justify-between shrink-0">
         <h3 className="font-serif text-sm font-bold text-white tracking-wide uppercase">
           Selected Items
         </h3>
@@ -56,7 +56,7 @@ export function SelectedPanel({
         </span>
       </div>
 
-      <div className="p-3 border-b border-border space-y-2 bg-secondary/30">
+      <div className="p-3 border-b border-border space-y-2 bg-secondary/30 shrink-0">
         <div>
           <Label
             htmlFor="event-name"
@@ -91,7 +91,7 @@ export function SelectedPanel({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 h-[calc(100vh-460px)] min-h-[200px]">
+      <ScrollArea className="flex-1 overflow-auto">
         {selectedItems.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center h-32 text-muted-foreground text-xs text-center px-4"
@@ -136,7 +136,7 @@ export function SelectedPanel({
         )}
       </ScrollArea>
 
-      <div className="p-3 space-y-2 border-t border-border bg-secondary/20">
+      <div className="p-3 space-y-2 border-t border-border bg-secondary/20 shrink-0">
         {selectedItems.length > 0 && (
           <Button
             variant="outline"

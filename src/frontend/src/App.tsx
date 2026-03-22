@@ -34,7 +34,7 @@ const cornerSvgBR = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="
   <text x="59" y="72" font-size="9" fill="#C9A24A" font-family="serif">✦</text>
 </svg>`;
 
-const centerTopOrnament = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+const _centerTopOrnament = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
   <line x1="20" y1="2" x2="20" y2="38" stroke="#C9A24A" stroke-width="1"/>
   <line x1="2" y1="20" x2="38" y2="20" stroke="#C9A24A" stroke-width="1"/>
   <line x1="7" y1="7" x2="33" y2="33" stroke="#C9A24A" stroke-width="0.8"/>
@@ -57,14 +57,6 @@ function toDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
-// Course image map — keys match course names in menuData
-const COURSE_IMAGE_PATHS: Record<string, string> = {
-  Snacks: "/assets/generated/category-snacks.dim_120x80.jpg",
-  "Main Veg Course": "/assets/generated/category-veg.dim_120x80.jpg",
-  "Main Non-Veg Course": "/assets/generated/category-nonveg.dim_120x80.jpg",
-  "Counter 1": "/assets/generated/category-counter.dim_120x80.jpg",
-};
-
 function buildPrintHtml(
   selectedItems: MenuItem[],
   eventName: string,
@@ -86,40 +78,26 @@ function buildPrintHtml(
       })
     : "";
 
-  // Use absolute URLs so images load correctly in the popup window
-  const origin = window.location.origin;
-
   const coursesHtml = Object.entries(grouped)
-    .map(([course, subCats]) => {
-      const imgPath = COURSE_IMAGE_PATHS[course];
-      const imgHtml = imgPath
-        ? `<div class="course-img-wrap">
-            <img class="course-img" src="${origin}${imgPath}" alt="${course}" crossorigin="anonymous" />
-            <div class="course-img-overlay">
-              <span class="course-img-label">${course}</span>
-            </div>
-          </div>`
-        : "";
-
-      return `
+    .map(
+      ([course, subCats]) => `
     <div class="course-section">
-      ${imgHtml}
       <div class="course-title">${course}</div>
       ${Object.entries(subCats)
         .map(
           ([subCat, items]) => `
-        <div class="subcategory-block">
-          <div class="subcategory-title">${subCat}</div>
-          <div class="items-grid">
-            ${items.map((name) => `<span class="menu-item">${name}</span>`).join("")}
+          <div class="subcategory-block">
+            <div class="subcategory-title">${subCat}</div>
+            <div class="items-list">
+              ${items.map((name) => `<div class="menu-item"><span class="item-bullet">✦</span>${name}</div>`).join("")}
+            </div>
           </div>
-        </div>
-      `,
+        `,
         )
         .join("")}
     </div>
-  `;
-    })
+  `,
+    )
     .join("");
 
   const eventInfoHtml =
@@ -131,298 +109,208 @@ function buildPrintHtml(
   const cornerTRUri = toDataUri(cornerSvgTR);
   const cornerBLUri = toDataUri(cornerSvgBL);
   const cornerBRUri = toDataUri(cornerSvgBR);
-  const topOrnUri = toDataUri(centerTopOrnament);
   const footOrnUri = toDataUri(footerOrnament);
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vijay Caterers Menu</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4; margin: 0; }
-    body {
+    html, body {
       width: 210mm;
-      min-height: 297mm;
       background: #F6F0E6;
       font-family: 'Playfair Display', Georgia, serif;
       color: #111111;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .print-page {
-      width: 210mm;
-      min-height: 297mm;
+    /* Fixed triple border frames — repeat on every printed page */
+    .border-outer {
+      position: fixed; top: 5mm; left: 5mm; right: 5mm; bottom: 5mm;
+      border: 3px solid #C6A24A; pointer-events: none; z-index: 999;
+    }
+    .border-middle {
+      position: fixed; top: 8mm; left: 8mm; right: 8mm; bottom: 8mm;
+      border: 1.5px solid #C6A24A; pointer-events: none; z-index: 999;
+    }
+    .border-inner {
+      position: fixed; top: 10mm; left: 10mm; right: 10mm; bottom: 10mm;
+      border: 0.5px solid #C6A24A; pointer-events: none; z-index: 999;
+    }
+    /* Fixed corners — repeat on every page */
+    .corner-img { position: fixed; width: 72px; height: 72px; z-index: 1000; }
+    .corner-tl { top: 3mm; left: 3mm; }
+    .corner-tr { top: 3mm; right: 3mm; }
+    .corner-bl { bottom: 3mm; left: 3mm; }
+    .corner-br { bottom: 3mm; right: 3mm; }
+
+    /* --- TABLE-BASED REPEATING HEADER/FOOTER --- */
+    table.page-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    /* thead repeats on every page natively in all browsers */
+    table.page-table thead tr td,
+    table.page-table tfoot tr td {
+      padding: 0;
+    }
+    .header-block {
       background: #F6F0E6;
-      position: relative;
-      padding: 20mm 18mm 18mm;
-      overflow: hidden;
+      padding: 14mm 16mm 4mm 16mm;
     }
-
-    /* Art Deco corner ornaments */
-    .corner-img {
-      position: absolute;
-      width: 72px;
-      height: 72px;
-    }
-    .corner-tl { top: 8mm; left: 8mm; }
-    .corner-tr { top: 8mm; right: 8mm; }
-    .corner-bl { bottom: 8mm; left: 8mm; }
-    .corner-br { bottom: 8mm; right: 8mm; }
-
-    /* Faint watermark mandala in bottom-right */
-    .watermark {
-      position: absolute;
-      bottom: 14mm;
-      right: 14mm;
-      width: 120px;
-      height: 120px;
-      opacity: 0.07;
-      pointer-events: none;
-    }
-
-    /* Top center ornament */
-    .top-center-orn {
-      display: block;
-      margin: 0 auto 5mm;
-      width: 36px;
-      height: 36px;
-    }
-
-    /* Header: logo left + title centered */
     .print-header {
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
-      padding-bottom: 5mm;
-      border-bottom: 1px solid #C9A24A;
-      margin-bottom: 5mm;
+      padding-bottom: 4mm;
+      border-bottom: 1.5px solid #C9A24A;
     }
     .print-logo-wrap {
-      position: absolute;
-      left: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
+      position: absolute; left: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
     }
     .print-logo {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      border: 1.5px solid #C9A24A;
-      object-fit: cover;
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 1.5px solid #C9A24A; object-fit: cover;
     }
     .print-logo-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 7.5px;
-      font-weight: 700;
-      color: #7A2A2A;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      text-align: center;
-      line-height: 1.2;
+      font-size: 7px; font-weight: 700; color: #7A2A2A;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      text-align: center; line-height: 1.2;
     }
-    .print-title {
-      text-align: center;
-      flex: 1;
-    }
+    .print-title { text-align: center; flex: 1; }
     .print-title h1 {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 38px;
-      font-weight: 900;
-      color: #111111;
-      letter-spacing: 5px;
-      text-transform: uppercase;
-      line-height: 1;
+      font-size: 32px; font-weight: 900; color: #111111;
+      letter-spacing: 5px; text-transform: uppercase; line-height: 1;
     }
     .print-title .subtitle {
-      font-size: 9px;
-      color: #C9A24A;
-      letter-spacing: 5px;
-      text-transform: uppercase;
-      margin-top: 4px;
+      font-size: 8px; color: #C9A24A; letter-spacing: 5px;
+      text-transform: uppercase; margin-top: 3px;
     }
-
-    /* Event info */
     .event-info {
-      text-align: center;
-      margin: 2mm 0 5mm;
-      font-size: 13px;
-      color: #6B4F1A;
-      font-style: italic;
-      letter-spacing: 0.5px;
+      text-align: center; margin-top: 3mm;
+      font-size: 12px; color: #6B4F1A; font-style: italic; letter-spacing: 0.5px;
     }
-
-    /* Course image banner */
-    .course-img-wrap {
-      position: relative;
-      width: 100%;
-      height: 52px;
-      overflow: hidden;
-      border-radius: 3px;
-      margin-bottom: 2mm;
-      border: 1px solid #C9A24A;
+    /* Content area */
+    .content-block {
+      padding: 6mm 16mm 0mm 16mm;
+      background: #F6F0E6;
     }
-    .course-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .course-img-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0.05) 100%);
-      display: flex;
-      align-items: center;
-      padding-left: 10px;
-    }
-    .course-img-label {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 2.5px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-    }
-
-    /* Menu content */
-    .course-section { margin-bottom: 5mm; }
-    .course-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 14px;
-      font-weight: 700;
-      color: #8B5E14;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      border-bottom: 1px solid #C9A24A;
-      padding-bottom: 1mm;
-      margin-bottom: 2.5mm;
-      display: none;
-    }
-    .subcategory-block { margin-bottom: 2.5mm; }
-    .subcategory-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #9E7020;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 1.5mm;
-    }
-    .items-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px 18px;
-    }
-    .menu-item {
-      font-size: 12px;
-      color: #2C1810;
-      font-style: italic;
-      white-space: nowrap;
-    }
-    .menu-item::before {
-      content: '✦ ';
-      color: #C9A24A;
-      font-size: 7px;
-      font-style: normal;
-    }
-
-    /* Footer */
-    .print-footer {
-      margin-top: 6mm;
-      padding-top: 4mm;
-      border-top: 1px solid #C9A24A;
+    .footer-block {
+      background: #F6F0E6;
+      padding: 3mm 16mm 14mm 16mm;
+      border-top: 1.5px solid #C9A24A;
       text-align: center;
     }
     .footer-contact {
-      font-family: 'Playfair Display', serif;
-      font-size: 11px;
-      font-weight: 600;
-      color: #7A5A1F;
-      letter-spacing: 0.8px;
-      margin-bottom: 2px;
+      font-size: 11px; font-weight: 600; color: #7A5A1F; letter-spacing: 0.8px; margin-bottom: 2px;
     }
     .footer-instagram {
-      font-family: 'Playfair Display', serif;
-      font-size: 10px;
-      font-weight: 400;
-      color: #7A5A1F;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      font-size: 10px; color: #7A5A1F; letter-spacing: 0.5px; margin-bottom: 2px;
     }
-    .footer-orn {
-      display: block;
-      margin: 3px auto 0;
-      width: 120px;
-      height: 16px;
+    .footer-orn { display: block; margin: 3px auto 0; width: 120px; height: 16px; }
+    /* Watermark */
+    .watermark {
+      position: fixed; bottom: 30mm; right: 14mm;
+      width: 100px; height: 100px; opacity: 0.06; pointer-events: none;
+    }
+    /* Menu content */
+    .course-section { margin-bottom: 5mm; border-bottom: 1px solid #e8d9b0; padding-bottom: 4mm; }
+    .course-title {
+      font-size: 14px; font-weight: 700; color: #8B5E14;
+      text-transform: uppercase; letter-spacing: 3px;
+      border-bottom: 1px solid #C9A24A; padding-bottom: 1mm; margin-bottom: 2.5mm;
+    }
+    .subcategory-block { margin-bottom: 3mm; }
+    .subcategory-title {
+      font-size: 11px; font-weight: 700; color: #9E7020;
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2mm;
+    }
+    .items-list {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 8px;
+    }
+    .menu-item {
+      font-size: 13px; color: #2C1810; font-style: italic; line-height: 1.5; padding: 1px 0;
+    }
+    .item-bullet { color: #C9A24A; font-size: 8px; font-style: normal; margin-right: 3px; vertical-align: middle; }
+    @media print {
+      .course-section { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-  <div class="print-page">
+  <!-- Triple borders: repeat on every page via position:fixed -->
+  <div class="border-outer"></div>
+  <div class="border-middle"></div>
+  <div class="border-inner"></div>
+  <!-- Corner ornaments: repeat on every page -->
+  <img class="corner-img corner-tl" src="${cornerTLUri}" alt="" />
+  <img class="corner-img corner-tr" src="${cornerTRUri}" alt="" />
+  <img class="corner-img corner-bl" src="${cornerBLUri}" alt="" />
+  <img class="corner-img corner-br" src="${cornerBRUri}" alt="" />
+  <!-- Mandala watermark -->
+  <svg class="watermark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="#8B6914">
+    <circle cx="50" cy="50" r="45" fill="none" stroke="#8B6914" stroke-width="1"/>
+    <circle cx="50" cy="50" r="35" fill="none" stroke="#8B6914" stroke-width="0.8"/>
+    <circle cx="50" cy="50" r="25" fill="none" stroke="#8B6914" stroke-width="0.6"/>
+    <line x1="50" y1="5" x2="50" y2="95" stroke="#8B6914" stroke-width="0.5"/>
+    <line x1="5" y1="50" x2="95" y2="50" stroke="#8B6914" stroke-width="0.5"/>
+    <line x1="18" y1="18" x2="82" y2="82" stroke="#8B6914" stroke-width="0.5"/>
+    <line x1="82" y1="18" x2="18" y2="82" stroke="#8B6914" stroke-width="0.5"/>
+  </svg>
 
-    <!-- Art Deco corner ornaments -->
-    <img class="corner-img corner-tl" src="${cornerTLUri}" alt="" />
-    <img class="corner-img corner-tr" src="${cornerTRUri}" alt="" />
-    <img class="corner-img corner-bl" src="${cornerBLUri}" alt="" />
-    <img class="corner-img corner-br" src="${cornerBRUri}" alt="" />
+  <!-- TABLE: thead repeats header, tfoot repeats footer, on every printed page -->
+  <table class="page-table">
+    <thead>
+      <tr>
+        <td>
+          <div class="header-block">
+            <div class="print-header">
+              <div class="print-logo-wrap">
+                <img
+                  src="https://res.cloudinary.com/dnllne8qr/image/upload/v1753611051/WhatsApp_Image_2025-07-26_at_5.02.48_PM_zil48t.png"
+                  alt="VC" class="print-logo" crossorigin="anonymous"
+                />
+                <div class="print-logo-name">VIJAY<br/>CATERERS</div>
+              </div>
+              <div class="print-title">
+                <h1>VIJAY CATERERS</h1>
+                <div class="subtitle">Premium Catering Services</div>
+              </div>
+            </div>
+            ${eventInfoHtml}
+          </div>
+        </td>
+      </tr>
+    </thead>
+    <tfoot>
+      <tr>
+        <td>
+          <div class="footer-block">
+            <div class="footer-contact">Contact No: 9866937747, 9959500833</div>
+            <div class="footer-instagram">Instagram: vijaycaterers_</div>
+            <img class="footer-orn" src="${footOrnUri}" alt="" />
+          </div>
+        </td>
+      </tr>
+    </tfoot>
+    <tbody>
+      <tr>
+        <td>
+          <div class="content-block">
+            ${coursesHtml}
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-    <!-- Watermark mandala (faint, bottom-right) -->
-    <svg class="watermark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="#8B6914">
-      <circle cx="50" cy="50" r="45" fill="none" stroke="#8B6914" stroke-width="1"/>
-      <circle cx="50" cy="50" r="35" fill="none" stroke="#8B6914" stroke-width="0.8"/>
-      <circle cx="50" cy="50" r="25" fill="none" stroke="#8B6914" stroke-width="0.6"/>
-      <line x1="50" y1="5" x2="50" y2="95" stroke="#8B6914" stroke-width="0.5"/>
-      <line x1="5" y1="50" x2="95" y2="50" stroke="#8B6914" stroke-width="0.5"/>
-      <line x1="18" y1="18" x2="82" y2="82" stroke="#8B6914" stroke-width="0.5"/>
-      <line x1="82" y1="18" x2="18" y2="82" stroke="#8B6914" stroke-width="0.5"/>
-      <polygon points="50,5 53,47 50,50 47,47" fill="#8B6914"/>
-      <polygon points="50,95 53,53 50,50 47,53" fill="#8B6914"/>
-      <polygon points="5,50 47,47 50,50 47,53" fill="#8B6914"/>
-      <polygon points="95,50 53,47 50,50 53,53" fill="#8B6914"/>
-    </svg>
-
-    <!-- Top center ornament -->
-    <img class="top-center-orn" src="${topOrnUri}" alt="" />
-
-    <!-- Header: logo left + large title centered -->
-    <div class="print-header">
-      <div class="print-logo-wrap">
-        <img
-          src="https://res.cloudinary.com/dnllne8qr/image/upload/v1753611051/WhatsApp_Image_2025-07-26_at_5.02.48_PM_zil48t.png"
-          alt="VC"
-          class="print-logo"
-          crossorigin="anonymous"
-        />
-        <div class="print-logo-name">VIJAY<br/>CATERERS</div>
-      </div>
-      <div class="print-title">
-        <h1>VIJAY CATERERS</h1>
-        <div class="subtitle">Premium Catering Services</div>
-      </div>
-    </div>
-
-    ${eventInfoHtml}
-
-    <!-- Menu content -->
-    <div>
-      ${coursesHtml}
-    </div>
-
-    <!-- Footer -->
-    <div class="print-footer">
-      <div class="footer-contact">Contact No: 9866937747, 9959500833</div>
-      <div class="footer-instagram">Instagram: vijaycaterers_</div>
-      <img class="footer-orn" src="${footOrnUri}" alt="" />
-    </div>
-  </div>
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() { window.print(); }, 600);
@@ -434,27 +322,31 @@ function buildPrintHtml(
 }
 
 export default function App() {
-  const [selectedSubCategory, setSelectedSubCategory] = useState<{
-    course: string;
-    subCategory: string;
-  } | null>(() => ({
-    course: menuData[0].name,
-    subCategory: menuData[0].subCategories[0].name,
-  }));
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(
+    () => menuData[0]?.name ?? null,
+  );
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
+    null,
+  );
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [customItems, setCustomItems] = useState<MenuItem[]>([]);
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
 
-  const allItems: MenuItem[] = menuData.flatMap((c) =>
+  const allMenuItems: MenuItem[] = menuData.flatMap((c) =>
     c.subCategories.flatMap((s) => s.items),
   );
 
-  const currentItems: MenuItem[] = selectedSubCategory
-    ? (menuData
-        .find((c) => c.name === selectedSubCategory.course)
-        ?.subCategories.find((s) => s.name === selectedSubCategory.subCategory)
-        ?.items ?? [])
-    : [];
+  const allItems = [...allMenuItems, ...customItems];
+
+  function handleSelectCourse(courseName: string) {
+    setSelectedCourse(courseName);
+    setSelectedSubCategory(null);
+  }
+
+  function handleSelectSubCategory(subName: string) {
+    setSelectedSubCategory((prev) => (prev === subName ? null : subName));
+  }
 
   function toggleItem(id: string) {
     setSelectedItems((prev) => {
@@ -478,6 +370,18 @@ export default function App() {
 
   function clearAll() {
     setSelectedItems(new Set());
+  }
+
+  function addCustomItem(name: string) {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const item: MenuItem = {
+      id,
+      name,
+      subCategory: "Custom Items",
+      course: "Special Additions",
+    };
+    setCustomItems((prev) => [...prev, item]);
+    setSelectedItems((prev) => new Set([...prev, id]));
   }
 
   const selectedItemObjects = allItems.filter((item) =>
@@ -519,22 +423,15 @@ export default function App() {
               target="_blank"
               rel="noreferrer"
               className="text-gold-light hover:text-gold transition-colors"
-              data-ocid="nav.home.link"
             >
               Home
             </a>
-            <span
-              className="text-gold font-semibold"
-              data-ocid="nav.generator.link"
-            >
-              Menu Generator
-            </span>
+            <span className="text-gold font-semibold">Menu Generator</span>
             <a
               href="https://vijay-caterers.onrender.com"
               target="_blank"
               rel="noreferrer"
               className="text-gold-light hover:text-gold transition-colors"
-              data-ocid="nav.contact.link"
             >
               Contact
             </a>
@@ -549,7 +446,7 @@ export default function App() {
           Design Your Custom Branded Menu PDF
         </h2>
         <p className="text-gold-light opacity-70 text-sm">
-          Select items from our menu · Preview your layout · Download as PDF
+          Search items · Add to menu · Download as PDF
         </p>
       </div>
 
@@ -557,17 +454,21 @@ export default function App() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 grid grid-cols-1 md:grid-cols-[260px_1fr_300px] gap-4">
         <MenuSidebar
           menuData={menuData}
+          selectedCourse={selectedCourse}
           selectedSubCategory={selectedSubCategory}
           selectedItems={selectedItems}
-          onSelect={setSelectedSubCategory}
+          onSelectCourse={handleSelectCourse}
+          onSelectSubCategory={handleSelectSubCategory}
         />
 
         <MenuItemsList
-          items={currentItems}
+          allItems={allItems}
           selectedItems={selectedItems}
           onToggleItem={toggleItem}
           onToggleAll={toggleAll}
-          subCategoryName={selectedSubCategory?.subCategory ?? ""}
+          onAddCustomItem={addCustomItem}
+          courseName={selectedCourse ?? ""}
+          subCategoryName={selectedSubCategory}
         />
 
         <SelectedPanel

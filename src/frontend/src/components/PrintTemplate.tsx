@@ -28,18 +28,13 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
       id="print-template"
       style={{
         display: "none",
-        position: "fixed",
-        top: 0,
-        left: 0,
         width: "210mm",
-        minHeight: "297mm",
         backgroundColor: "#F5F0E8",
         fontFamily: "'Playfair Display', Georgia, serif",
         color: "#2C1810",
         padding: "0",
         margin: "0",
         boxSizing: "border-box",
-        zIndex: 9999,
       }}
     >
       <style>{`
@@ -49,9 +44,14 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
           body > * { display: none !important; }
           #print-template {
             display: block !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
+            width: 210mm !important;
+          }
+          .print-page {
+            page-break-after: auto;
+            min-height: 297mm;
+          }
+          .course-section {
+            page-break-inside: avoid;
           }
         }
         .print-page {
@@ -103,7 +103,7 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
         .print-title { text-align: center; }
         .print-title h1 {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 28px; font-weight: 800;
+          font-size: 32px; font-weight: 800;
           color: #8B6914;
           letter-spacing: 3px;
           text-transform: uppercase;
@@ -115,28 +115,33 @@ export function PrintTemplate({ selectedItems, eventName, eventDate }: Props) {
           margin: 3px 0 0;
         }
         .star-top { text-align: center; color: #C6A24A; font-size: 20px; margin-bottom: 2mm; }
-        .event-info { text-align: center; margin: 3mm 0 5mm; font-size: 11px; color: #6B4F1A; font-style: italic; }
-        .course-section { margin-bottom: 5mm; }
+        .event-info { text-align: center; margin: 3mm 0 5mm; font-size: 13px; color: #6B4F1A; font-style: italic; }
+        .course-section {
+          margin-bottom: 5mm;
+          border-bottom: 1px solid #e8d9b0;
+          padding-bottom: 4mm;
+          page-break-inside: avoid;
+        }
         .course-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 13px; font-weight: 700; color: #8B6914;
+          font-size: 20px; font-weight: 700; color: #8B6914;
           text-transform: uppercase; letter-spacing: 2px;
           border-bottom: 1px solid #C6A24A;
           padding-bottom: 1.5mm; margin-bottom: 3mm;
         }
         .subcategory-block { margin-bottom: 3mm; }
         .subcategory-title {
-          font-size: 10px; font-weight: 700; color: #A07820;
+          font-size: 16px; font-weight: 700; color: #A07820;
           text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1.5mm;
         }
-        .items-grid { display: flex; flex-wrap: wrap; gap: 2px 16px; }
-        .menu-item { font-size: 11px; color: #2C1810; font-style: italic; white-space: nowrap; }
-        .menu-item::before { content: '✦ '; color: #C6A24A; font-size: 8px; font-style: normal; }
+        .items-grid { display: flex; flex-direction: column; gap: 4px; }
+        .menu-item { font-size: 20px; color: #2C1810; font-style: italic; }
+        .menu-item::before { content: '✦ '; color: #C6A24A; font-size: 12px; font-style: normal; }
         .print-footer {
           margin-top: 6mm; padding-top: 4mm;
           border-top: 1.5px solid #C6A24A; text-align: center;
         }
-        .print-footer p { font-size: 9px; color: #8B6914; letter-spacing: 1px; margin: 1mm 0; }
+        .print-footer p { font-size: 11px; color: #8B6914; letter-spacing: 1px; margin: 1mm 0; }
       `}</style>
 
       <div className="print-page">
